@@ -1,1 +1,131 @@
-undefined
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Intelligence Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0a0e17;--card:#111827;--border:#1e293b;--accent:#38bdf8;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--dim:#64748b;--text:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',monospace,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.header h1{font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--card);border-radius:10px;padding:4px;border:1px solid var(--border)}
+.tab{flex:1;padding:10px 20px;text-align:center;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--dim);transition:all 0.2s}
+.tab:hover{color:var(--text)}.tab.active{background:var(--accent);color:#000;font-weight:600}
+.module{display:none}.module.active{display:block}
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--dim);cursor:pointer;font-size:0.78rem;transition:all 0.2s}
+.filter-btn.active,.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.signal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all 0.2s}
+.signal-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.signal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.signal-name{font-weight:600;font-size:0.95rem}
+.signal-ticker{color:var(--dim);font-size:0.8rem}
+.signal-badge{padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.signal-badge.buy{background:rgba(52,211,153,0.15);color:var(--green)}
+.signal-badge.hold{background:rgba(251,191,36,0.15);color:var(--yellow)}
+.signal-badge.sell{background:rgba(248,113,113,0.15);color:var(--red)}
+.signal-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.metric{background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 10px}
+.metric-label{font-size:0.65rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px}
+.metric-value{font-size:0.85rem;font-weight:600;margin-top:2px}
+.signal-bar-container{margin-top:12px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.signal-bar{height:100%;border-radius:2px}
+.waterfall-container{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:768px){.waterfall-container,.salary-grid{grid-template-columns:1fr}}
+.xirr-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.xirr-card h3{font-size:0.85rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px}
+.xirr-tier{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.xirr-tier:last-child{border-bottom:none}
+.xirr-label{flex:1;font-size:0.85rem}
+.xirr-values{text-align:right}.xirr-pct{font-weight:700;font-size:1rem}.xirr-contrib{font-size:0.72rem;color:var(--dim)}
+.salary-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.salary-input{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.salary-input h3{font-size:0.85rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px}
+.input-group{margin-bottom:14px}
+.input-group label{display:block;font-size:0.78rem;color:var(--dim);margin-bottom:4px}
+.input-group input{width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95rem;outline:none}
+.input-group input:focus{border-color:var(--accent)}
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.slider-row label{font-size:0.78rem;color:var(--dim);width:60px}
+.slider-row input[type=range]{flex:1;-webkit-appearance:none;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;outline:none}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
+.slider-row .pct{width:40px;text-align:right;font-size:0.82rem;font-weight:600}
+.bucket-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.bucket{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;justify-content:space-between;align-items:center}
+.bucket-label{font-size:0.85rem;font-weight:500}.bucket-amount{font-size:1.2rem;font-weight:700}
+.bucket.spend .bucket-amount{color:#f472b6}.bucket.invest .bucket-amount{color:var(--accent)}.bucket.save .bucket-amount{color:var(--green)}
+.detect-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#6366f1);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.9rem;margin-top:12px}
+.detect-btn:hover{opacity:0.85}
+#normNote{font-size:0.7rem;color:var(--dim);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="header"><div><h1>Portfolio Intelligence</h1><div id="ts" style="color:var(--dim);font-size:0.8rem"></div></div></div>
+<div class="tabs">
+<div class="tab active" onclick="st(0)">Signal View</div>
+<div class="tab" onclick="st(1)">XIRR Waterfall</div>
+<div class="tab" onclick="st(2)">Salary Allocation</div>
+</div>
+<div class="module active" id="mod0">
+<div class="filters">
+<button class="filter-btn active" onclick="fs('all',this)">All</button>
+<button class="filter-btn" onclick="fs('buy',this)">Buy</button>
+<button class="filter-btn" onclick="fs('hold',this)">Hold</button>
+<button class="filter-btn" onclick="fs('sell',this)">Sell</button>
+<button class="filter-btn" onclick="fs('equity',this)">Equity</button>
+<button class="filter-btn" onclick="fs('debt',this)">Debt</button>
+<button class="filter-btn" onclick="fs('gold',this)">Gold</button>
+</div>
+<div class="signal-grid" id="signalGrid"></div>
+</div>
+<div class="module" id="mod1">
+<div class="waterfall-container">
+<div class="xirr-card"><h3>Portfolio Return Waterfall</h3><div id="waterfallList"></div></div>
+<div class="xirr-card"><h3>Allocation by Asset Class</h3><canvas id="xirrChart" height="380"></canvas></div>
+</div></div>
+<div class="module" id="mod2">
+<div class="salary-grid">
+<div class="salary-input">
+<h3>Salary Credit</h3>
+<div class="input-group"><label>Amount (INR)</label><input type="number" id="salaryAmt" value="0"></div>
+<div class="input-group"><label>Allocation Mix</label></div>
+<div class="slider-row"><label>Spend</label><input type="range" id="spendPct" min="10" max="80" value="55" oninput="us()"><span class="pct" id="spendVal">55%</span></div>
+<div class="slider-row"><label>Invest</label><input type="range" id="investPct" min="5" max="60" value="25" oninput="us()"><span class="pct" id="investVal">25%</span></div>
+<div class="slider-row"><label>Save</label><input type="range" id="savePct" min="5" max="60" value="20" oninput="us()"><span class="pct" id="saveVal">20%</span></div>
+<div id="normNote"></div>
+<button class="detect-btn" onclick="ca()">Calculate Buckets</button>
+</div>
+<div class="salary-input">
+<h3>Bucket Breakdown</h3>
+<div class="bucket-grid">
+<div class="bucket spend"><div><div class="bucket-label">Spend</div><div style="font-size:0.7rem;color:var(--dim)" id="spendDesc"></div></div><div class="bucket-amount" id="spendAmt">₹ 0</div></div>
+<div class="bucket invest"><div><div class="bucket-label">Invest</div><div style="font-size:0.7rem;color:var(--dim)" id="investDesc"></div></div><div class="bucket-amount" id="investAmt">₹ 0</div></div>
+<div class="bucket save"><div><div class="bucket-label">Save</div><div style="font-size:0.7rem;color:var(--dim)" id="saveDesc"></div></div><div class="bucket-amount" id="saveAmt">₹ 0</div></div>
+</div>
+<div style="margin-top:20px">
+<h3 style="font-size:0.85rem;color:var(--dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">Bank SMS Detector</h3>
+<div class="input-group"><label>Paste SMS</label><input type="text" id="smsText" placeholder="Salary credited Rs 85000" onchange="ps()"></div>
+<div id="smsResult" style="font-size:0.78rem;color:var(--dim);margin-top:6px"></div>
+</div></div></div></div>
+<script>
+var S={holdings:[{name:"Nippon India Growth",ticker:"NIPGROW",asset:"equity",price:2845,qty:50,avgPrice:2100,rsi:62,week52Pos:0.78,pe:28.4,sectorPe:32.1},{name:"HDFC Index Nifty 50",ticker:"HDFINDEX",asset:"equity",price:198,qty:200,avgPrice:165,rsi:55,week52Pos:0.65,pe:22.1,sectorPe:32.1},{name:"SBI Magnum Comma",ticker:"SBICOM",asset:"equity",price:142,qty:120,avgPrice:158,rsi:38,week52Pos:0.32,pe:19.8,sectorPe:24.5},{name:"ICICI Pru Bluechip",ticker:"ICIBLUE",asset:"equity",price:112,qty:300,avgPrice:95,rsi:71,week52Pos:0.88,pe:31.2,sectorPe:32.1},{name:"Sukanya Samriddhi",ticker:"SSY",asset:"debt",price:0,qty:1,avgPrice:140000,rsi:0,week52Pos:0.5,pe:0,sectorPe:0},{name:"PPF",ticker:"PPF",asset:"debt",price:0,qty:1,avgPrice:50000,rsi:0,week52Pos:0.5,pe:0,sectorPe:0},{name:"Sovereign Gold Bonds",ticker:"SGB",asset:"gold",price:5200,qty:8,avgPrice:4800,rsi:48,week52Pos:0.55,pe:0,sectorPe:0},{name:"Tata Digital India",ticker:"TATADIG",asset:"equity",price:4250,qty:25,avgPrice:3800,rsi:58,week52Pos:0.72,pe:35.6,sectorPe:38.2},{name:"Motilal NASDAQ 100",ticker:"MON100",asset:"equity",price:98,qty:150,avgPrice:82,rsi:66,week52Pos:0.81,pe:28.9,sectorPe:32.1},{name:"Axis Treasury",ticker:"AXTREAS",asset:"debt",price:0,qty:1,avgPrice:75000,rsi:0,week52Pos:0.5,pe:0,sectorPe:0}],wf:[]};
+function cm(){S.holdings.forEach(function(i){var sc=0;if(i.asset==="equity"){i._r=i.rsi<30?1:i.rsi>70?-1:(50-i.rsi)/100;i._5=1-i.week52Pos;i._p=i.sectorPe>0?(i.sectorPe-i.pe)/i.sectorPe:0;sc=i._r*0.4+i._5*0.35+i._p*0.25;i.strength=Math.min(Math.abs(sc),1);i.signal=sc>0.15?"Buy":sc<-0.1?"Sell":"Hold"}else{i.signal="Hold";i.strength=0.9}})}
+function st(n){document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",i===n)});document.querySelectorAll(".module").forEach(function(m,i){m.classList.toggle("active",i===n)});if(n===1)xirr()}
+function rs(f){var g=document.getElementById("signalGrid");var it=S.holdings;if(["buy","hold","sell"].includes(f))it=it.filter(function(h){return h.signal.toLowerCase()===f});else if(["equity","debt","gold"].includes(f))it=it.filter(function(h){return h.asset===f});g.innerHTML=it.map(function(h){var b=h.signal.toLowerCase();var c=b==="buy"?"var(--green)":b==="sell"?"var(--red)":"var(--yellow)";var w=Math.round(h.strength*100);var m=h.asset==="equity"?'<div class="metric"><div class="metric-label">RSI</div><div class="metric-value">'+h.rsi+'</div></div><div class="metric"><div class="metric-label">52W Pos</div><div class="metric-value">'+Math.round(h.week52Pos*100)+'%</div></div><div class="metric"><div class="metric-label">P/E</div><div class="metric-value">'+h.pe+'</div></div><div class="metric"><div class="metric-label">Sector P/E</div><div class="metric-value">'+h.sectorPe+'</div></div>':'<div class="metric"><div class="metric-label">Type</div><div class="metric-value" style="font-size:0.75rem;text-transform:capitalize">'+h.asset+'</div></div><div class="metric"><div class="metric-label">Invested</div><div class="metric-value">₹'+h.avgPrice.toLocaleString()+'</div></div><div class="metric"><div class="metric-label">Current</div><div class="metric-value">₹'+(h.price?h.price.toLocaleString():"N/A")+'</div></div><div class="metric"><div class="metric-label">Signal</div><div class="metric-value">'+h.signal+'</div></div>';return'<div class="signal-card"><div class="signal-header"><div><div class="signal-name">'+h.name+'</div><div class="signal-ticker">'+h.ticker+' · <span style="text-transform:capitalize">'+h.asset+'</span></div></div><span class="signal-badge '+b+'">'+h.signal+'</span></div><div class="signal-metrics">'+m+'</div><div class="signal-bar-container"><div class="signal-bar" style="width:'+w+'%;background:'+c+'"></div></div><div style="font-size:0.7rem;color:var(--dim);margin-top:4px;text-align:right">Strength: '+Math.round(h.strength*100)+'%</div></div>'}).join("")}
+function fs(f,b){document.querySelectorAll(".filter-btn").forEach(function(x){x.classList.remove("active")});b.classList.add("active");rs(f)}
+function cx(){var h=S.holdings;var ti=0,tc=0;h.forEach(function(i){var inv=i.avgPrice*i.qty;var cur=i.price?i.price*i.qty:i.avgPrice*i.qty;i._inv=inv;i._cur=cur;i._ret=inv>0?((cur-inv)/inv)*100:0;ti+=inv;tc+=cur});var tr=ti>0?((tc-ti)/ti)*100:0;var g={equity:[],debt:[],gold:[]};h.forEach(function(i){g[i.asset].push(i)});function gd(a){if(!g[a].length)return null;var inv=g[a].reduce(function(s,i){return s+i._inv},0);var cur=g[a].reduce(function(s,i){return s+i._cur},0);return{inv:inv,cur:cur,ret:inv>0?((cur-inv)/inv)*100:0}}var eq=gd("equity"),debt=gd("debt"),gold=gd("gold");S.wf=[{label:"Total Portfolio",pct:tr,contrib:tc-ti,isTotal:true}];if(eq){S.wf.push({label:"Equity Mutual Funds",pct:eq.ret,contrib:eq.cur-eq.inv});g.equity.forEach(function(i){S.wf.push({label:"  "+i.name,pct:i._ret,contrib:i._cur-i._inv})})}if(debt){S.wf.push({label:"Debt Instruments",pct:debt.ret,contrib:debt.cur-debt.inv});g.debt.forEach(function(i){S.wf.push({label:"  "+i.name,pct:i._ret,contrib:i._cur-i._inv})})}if(gold){S.wf.push({label:"Gold",pct:gold.ret,contrib:gold.cur-gold.inv});g.gold.forEach(function(i){S.wf.push({label:"  "+i.name,pct:i._ret,contrib:i._cur-i._inv})})}return{tr:tr,ti:ti,tc:tc}}
+function fn(n){if(Math.abs(n)>=1e7)return"₹ "+(n/1e7).toFixed(2)+" Cr";if(Math.abs(n)>=1e5)return"₹ "+(n/1e5).toFixed(2)+" L";return"₹ "+Math.round(n).toLocaleString("en-IN")}
+function rw(){cx();var l=document.getElementById("waterfallList");l.innerHTML=S.wf.map(function(w){var in2=w.label.startsWith("  ")?"padding-left:16px;":"";var b=w.isTotal?"font-weight:700;":"";var pc=w.pct>=0?"var(--green)":"var(--red)";var cs=w.contrib>=0?"+"+fn(w.contrib):fn(w.contrib);return'<div class="xirr-tier" style="'+in2+b+'"><div class="xirr-label">'+w.label+'</div><div class="xirr-values"><div class="xirr-pct" style="color:'+pc+'">'+w.pct.toFixed(1)+'%</div><div class="xirr-contrib">'+cs+'</div></div></div>'}).join("")}
+function xirr(){rw();var ctx=document.getElementById("xirrChart");if(!ctx)return;var lb=S.wf.filter(function(w){return!w.isTotal}).map(function(w){return w.label.trim()});var d=S.wf.filter(function(w){return!w.isTotal}).map(function(w){return w.pct});var cl=d.map(function(v){return v>=0?"rgba(52,211,153,0.8)":"rgba(248,113,113,0.8)"});if(window._xc)window._xc.destroy();window._xc=new Chart(ctx,{type:"bar",data:{labels:lb,datasets:[{label:"XIRR (%)",data:d,backgroundColor:cl,borderRadius:4,barThickness:24}]},options:{responsive:true,indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return"Return: "+c.raw.toFixed(1)+"%"}}}},scales:{x:{grid:{color:"rgba(255,255,255,0.06)"},ticks:{color:"#64748b",font:{size:11}}},y:{grid:{display:false},ticks:{color:"#64748b",font:{size:10}}}}}})}
+function us(){var s=parseInt(document.getElementById("spendPct").value);var i=parseInt(document.getElementById("investPct").value);var sa=parseInt(document.getElementById("savePct").value);var t=s+i+sa;document.getElementById("spendVal").textContent=s+"%";document.getElementById("investVal").textContent=i+"%";document.getElementById("saveVal").textContent=sa+"%";var n=document.getElementById("normNote");if(t!==100){n.textContent="Total: "+t+"% — will normalize";n.style.color="var(--yellow)"}else{n.textContent=""}ca()}
+function ca(){var amt=parseFloat(document.getElementById("salaryAmt").value)||0;if(amt<=0)return;var s=parseInt(document.getElementById("spendPct").value);var i=parseInt(document.getElementById("investPct").value);var sa=parseInt(document.getElementById("savePct").value);var t=s+i+sa;if(t!==100){s=Math.round(s/t*100);i=Math.round(i/t*100);sa=100-s-i}var a1=Math.round(amt*s/100);var a2=Math.round(amt*i/100);var a3=amt-a1-a2;document.getElementById("spendAmt").textContent=fn(a1);document.getElementById("investAmt").textContent=fn(a2);document.getElementById("saveAmt").textContent=fn(a3);document.getElementById("spendDesc").textContent=s+"% of salary";document.getElementById("investDesc").textContent=i+"% of salary";document.getElementById("saveDesc").textContent=sa+"% of salary"}
+function ps(){var txt=document.getElementById("smsText").value;var r=document.getElementById("smsResult");var p=[/(?:rs.?|inr)s*([d,]+(?:.d{1,2})?)/i,/(?:credited|received|salary)s*(?:rs.?|inr)?s*([d,]+(?:.d{1,2})?)/i,/([d,]+(?:.d{1,2})?)s*(?:credited|received)/i];for(var i=0;i<p.length;i++){var m=txt.match(p[i]);if(m){var a=parseFloat(m[1].replace(/,/g,""));if(a>1000){document.getElementById("salaryAmt").value=a;r.innerHTML='<span style="color:var(--green)">Detected: '+fn(a)+"</span>";ca();return}}}r.innerHTML='<span style="color:var(--yellow)">Could not detect amount</span>'}
+function init(){cm();rs("all");rw();ca();document.getElementById("ts").textContent="Updated: "+new Date().toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})}
+init();
+</script>
+</body>
+</html>
